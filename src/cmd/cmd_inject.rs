@@ -3,11 +3,16 @@ use clap::Parser;
 
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[arg(required = true, help = "The source png file")]
+    #[arg(
+        required = true,
+        value_name = "INPUT_FILE",
+        help = "The source png file"
+    )]
     src: String,
 
     #[arg(
         required = true,
+        value_name = "OUTPUT_FILE",
         help = "The destination png file where to inject the new chunk"
     )]
     dst: String,

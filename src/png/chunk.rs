@@ -19,6 +19,7 @@ pub struct PngChunk {
 }
 
 impl PngChunk {
+    // Initializes an empty chunk
     pub fn new() -> PngChunk {
         PngChunk {
             data_len: 0,
@@ -28,10 +29,12 @@ impl PngChunk {
         }
     }
 
+    // Checks if the chunk type is equal to the given argument
     pub fn is_type(&self, dtype: u32) -> bool {
         return self.data_type == dtype;
     }
 
+    // Dumps the chunk contents (excluding the data) to stdout
     pub fn dump(&self) {
         println!("  length: {} bytes", self.data_len);
         let t = self.data_type.to_be_bytes();
@@ -42,7 +45,8 @@ impl PngChunk {
         println!("  crc32:  {:04X}", self.crc32);
     }
 
-    // This 'constructor' returns a PngChunk from file contents
+    // Fills itself with data read from the file at the current location.
+    // Note that to save memory, no data is actually stored, just the file pointer.
     pub fn read_no_data(&mut self, file: &mut File) -> ChunkResult<()> {
         let mut buffer_u32 = [0_u8; 4];
         let mut hasher = Hasher::new();
@@ -58,6 +62,7 @@ impl PngChunk {
         hasher.update(&buffer_u32);
         self.data_type = u32::from_be_bytes(buffer_u32);
 
+        // Here we point at the actual data. Save the pointer.
         self.data_ptr = file.stream_position().map_err(|e| e.to_string())?;
 
         // Skip data but calculate crc32
@@ -78,6 +83,7 @@ impl PngChunk {
         Ok(())
     }
 
+    // Copies iself from
     pub fn copy_data(&self, fin: &mut File, fout: &mut File) -> ChunkResult<()> {
         let mut how_many = self.data_len;
         const CHUNK_BUF_CAP: u32 = 32 * 1024;

@@ -3,7 +3,7 @@ use clap::Parser;
 
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[arg(required = true, help = "The source file")]
+    #[arg(required = true, value_name = "INPUT_FILE", help = "The source file")]
     src: String,
 }
 

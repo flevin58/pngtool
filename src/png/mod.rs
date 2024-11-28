@@ -58,6 +58,7 @@ impl PngFile {
         Ok(())
     }
 
+    // Dumps the PNG file to stdout
     pub fn dump(&mut self) {
         println!("Header: {:08X}", self.header);
         for chunk in self.chunks.iter() {
