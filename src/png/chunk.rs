@@ -3,6 +3,7 @@ pub const IEND: u32 = 0x49454E44;
 
 use crc32fast::Hasher;
 use std::{
+    fmt,
     fs::File,
     io::{Read, Seek, SeekFrom, Write},
 };
@@ -16,6 +17,18 @@ pub struct PngChunk {
     pub data_type: u32, // The chunk type (IHDR, IEND, etc.)
     pub data_ptr: u64,  // Pointer to the file position where the data is located
     pub crc32: u32,     // The crc32 of the type + actual data bytes
+}
+
+// Trait to allow println!("{}", chunk) giving the ascii type as output (i.e. 'IHDR', etc.)
+impl fmt::Display for PngChunk {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let t = self.data_type.to_be_bytes();
+        write!(
+            f,
+            "{}{}{}{}",
+            t[0] as char, t[1] as char, t[2] as char, t[3] as char
+        )
+    }
 }
 
 impl PngChunk {
@@ -36,12 +49,8 @@ impl PngChunk {
 
     // Dumps the chunk contents (excluding the data) to stdout
     pub fn dump(&self) {
+        println!("Chunk: {} (0x{:04X})", self, self.data_type);
         println!("  length: {} bytes", self.data_len);
-        let t = self.data_type.to_be_bytes();
-        println!(
-            "  type:   {}{}{}{} (0x{:04X})",
-            t[0] as char, t[1] as char, t[2] as char, t[3] as char, self.data_type
-        );
         println!("  crc32:  {:04X}", self.crc32);
     }
 
@@ -91,7 +100,7 @@ impl PngChunk {
         fin.seek(SeekFrom::Start(self.data_ptr))
             .map_err(|e| e.to_string())?;
 
-        eprintln!("Writing {} bytes from {}", how_many, self.data_ptr);
+        // eprintln!("Writing {} bytes from {}", how_many, self.data_ptr);
 
         while how_many > 0 {
             let mut cap = how_many;
