@@ -16,12 +16,22 @@ pub struct Args {
         help = "The destination png file where to inject the new chunk"
     )]
     dst: String,
+
+    #[arg(
+        required = false,
+        long,
+        short,
+        value_name = "MESSAGE",
+        help = "The message to hide in the <OUTPUT_FILE>",
+        default_value = "Kilroy was here!"
+    )]
+    message: String,
 }
 
 pub fn run(args: &Args) {
     let png = PngFile::new(&args.src);
     match png {
-        Ok(mut png) => _ = png.inject(&args.dst),
+        Ok(mut png) => _ = png.inject(&args.dst, &args.message),
         Err(e) => {
             eprintln!("Error loading png file: {}", e.to_string());
         }

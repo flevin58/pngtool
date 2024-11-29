@@ -12,8 +12,11 @@ struct CmdArgs {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    #[command(about = "Dumps the header and chunks (without data) to stdout")]
     Dump(cmd_dump::Args),
+    #[command(about = "Injects a hidden message")]
     Inject(cmd_inject::Args),
+    #[command(about = "Extracts the hidden messa if present")]
     Extract(cmd_extract::Args),
 }
 

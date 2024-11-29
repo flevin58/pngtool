@@ -61,19 +61,32 @@ impl PngFile {
     // Dumps the PNG file to stdout
     pub fn dump(&mut self) {
         println!("Header: {:08X}", self.header);
+        let mut last_type: u32 = 0;
+        let mut count: u32 = 1;
+        let mut total_len: u64 = 0;
         for chunk in self.chunks.iter() {
-            chunk.dump();
+            if last_type != chunk.data_type {
+                if count > 1 {
+                    println!("  repeated: {} time(s)", count);
+                    println!("  totla length: {}", total_len);
+                }
+                chunk.dump();
+                last_type = chunk.data_type;
+                count = 0;
+                total_len = 0;
+            }
+            count += 1;
+            total_len += chunk.data_len as u64;
         }
     }
 
-    // TODO: For the moment we inject a fixed string, make it custom!
-    pub fn inject(&mut self, target_png: &str) -> PngResult<()> {
+    pub fn inject(&mut self, target_png: &str, msg: &str) -> PngResult<()> {
         let mut out = File::create(target_png).map_err(|e| e.to_string())?;
         out.write(&PNG_HEADER).map_err(|e| e.to_string())?;
         for i in 0..self.chunks.len() {
             if self.chunks[i].is_type(IEND) {
                 // Let's insert the new chunk just before the end...
-                PngChunk::write_custom(&mut out, "Kilroy was here!")?;
+                PngChunk::write_custom(&mut out, msg)?;
             }
             self.chunks[i].write_to_file(&mut self.file, &mut out)?;
         }

@@ -1,6 +1,6 @@
 pub const IHDR: u32 = 0x49484452;
 pub const IEND: u32 = 0x49454E44;
-pub const HIDE: u32 = u32::from_be_bytes([b'h', b'i', b'D', b'E']);
+pub const HIDE: u32 = u32::from_be_bytes([b'h', b'I', b'D', b'e']);
 
 use crc32fast::Hasher;
 use std::{
@@ -68,8 +68,7 @@ impl PngChunk {
         fout.write(&buffer).map_err(|e| e.to_string())?;
 
         // Write data bytes
-        fout.write("Kilroy was here!".as_bytes())
-            .map_err(|e| e.to_string())?;
+        fout.write(text.as_bytes()).map_err(|e| e.to_string())?;
 
         // Write crc32
         let buffer = chunk.crc32.to_be_bytes();
