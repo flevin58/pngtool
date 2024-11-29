@@ -1,6 +1,6 @@
 mod chunk;
 
-use chunk::{PngChunk, IEND, IHDR};
+use chunk::{PngChunk, HIDE, IEND, IHDR};
 use std::{
     fs::File,
     io::{Read, Write},
@@ -66,26 +66,27 @@ impl PngFile {
         }
     }
 
-    // TODO: Add the new chunk to inject after the header
+    // TODO: For the moment we inject a fixed string, make it custom!
     pub fn inject(&mut self, target_png: &str) -> PngResult<()> {
         let mut out = File::create(target_png).map_err(|e| e.to_string())?;
         out.write(&PNG_HEADER).map_err(|e| e.to_string())?;
         for i in 0..self.chunks.len() {
-            // Write data length
-            let buffer = self.chunks[i].data_len.to_be_bytes();
-            out.write(&buffer).map_err(|e| e.to_string())?;
-
-            // Write data type
-            let buffer = self.chunks[i].data_type.to_be_bytes();
-            out.write(&buffer).map_err(|e| e.to_string())?;
-
-            // Write data bytes
-            self.chunks[i].copy_data(&mut self.file, &mut out)?;
-
-            // Write crc32
-            let buffer = self.chunks[i].crc32.to_be_bytes();
-            out.write(&buffer).map_err(|e| e.to_string())?;
+            if self.chunks[i].is_type(IEND) {
+                // Let's insert the new chunk just before the end...
+                PngChunk::write_custom(&mut out, "Kilroy was here!")?;
+            }
+            self.chunks[i].write_to_file(&mut self.file, &mut out)?;
         }
         Ok(())
+    }
+
+    pub fn extract(&mut self) -> PngResult<()> {
+        for chunk in self.chunks.iter() {
+            if chunk.is_type(HIDE) {
+                chunk.print_data(&mut self.file)?;
+                return Ok(());
+            }
+        }
+        Err(String::from("Hidden message not found in this file"))
     }
 }

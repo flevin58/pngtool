@@ -1,5 +1,6 @@
 pub const IHDR: u32 = 0x49484452;
 pub const IEND: u32 = 0x49454E44;
+pub const HIDE: u32 = u32::from_be_bytes([b'h', b'i', b'D', b'E']);
 
 use crc32fast::Hasher;
 use std::{
@@ -7,6 +8,8 @@ use std::{
     fs::File,
     io::{Read, Seek, SeekFrom, Write},
 };
+
+use super::PngResult;
 
 type ChunkResult<T> = Result<T, String>;
 
@@ -42,9 +45,54 @@ impl PngChunk {
         }
     }
 
+    // Initializes a custom chunk for 'hidden' data named ... well ... "hiDE"
+    // For the moment we can embed only plain text (TODO: embed files ... zip ... encrypt ???)
+    pub fn write_custom(fout: &mut File, text: &str) -> PngResult<()> {
+        let mut hasher = Hasher::new();
+        hasher.update(&u32::to_be_bytes(HIDE));
+        hasher.update(text.as_bytes());
+
+        let chunk = PngChunk {
+            data_len: text.len() as u32,
+            data_type: HIDE,
+            data_ptr: 0,
+            crc32: hasher.finalize(),
+        };
+
+        // Write data length
+        let buffer = chunk.data_len.to_be_bytes();
+        fout.write(&buffer).map_err(|e| e.to_string())?;
+
+        // Write data type
+        let buffer = chunk.data_type.to_be_bytes();
+        fout.write(&buffer).map_err(|e| e.to_string())?;
+
+        // Write data bytes
+        fout.write("Kilroy was here!".as_bytes())
+            .map_err(|e| e.to_string())?;
+
+        // Write crc32
+        let buffer = chunk.crc32.to_be_bytes();
+        fout.write(&buffer).map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
     // Checks if the chunk type is equal to the given argument
     pub fn is_type(&self, dtype: u32) -> bool {
         return self.data_type == dtype;
+    }
+
+    pub fn print_data(&self, fin: &mut File) -> ChunkResult<()> {
+        fin.seek(SeekFrom::Start(self.data_ptr))
+            .map_err(|e| e.to_string())?;
+
+        let mut buf: Vec<u8> = vec![0; self.data_len as usize];
+        fin.read(&mut buf).map_err(|e| e.to_string())?;
+
+        println!("Found secret message:");
+        println!("{}", String::from_utf8(buf).map_err(|e| e.to_string())?);
+        Ok(())
     }
 
     // Dumps the chunk contents (excluding the data) to stdout
@@ -88,6 +136,25 @@ impl PngChunk {
         if hasher.finalize() != self.crc32 {
             return Err(String::from("Bad crc32 in chunk"));
         }
+
+        Ok(())
+    }
+
+    pub fn write_to_file(&self, fin: &mut File, fout: &mut File) -> ChunkResult<()> {
+        // Write data length
+        let buffer = self.data_len.to_be_bytes();
+        fout.write(&buffer).map_err(|e| e.to_string())?;
+
+        // Write data type
+        let buffer = self.data_type.to_be_bytes();
+        fout.write(&buffer).map_err(|e| e.to_string())?;
+
+        // Write data bytes
+        self.copy_data(fin, fout)?;
+
+        // Write crc32
+        let buffer = self.crc32.to_be_bytes();
+        fout.write(&buffer).map_err(|e| e.to_string())?;
 
         Ok(())
     }
