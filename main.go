@@ -7,8 +7,8 @@ import (
 
 var CLI struct {
 	Dump    cmd.Dump    `cmd:"" help:"Dump the PNG file to stdout"`
-	Extract cmd.Extract `cmd:"" help:"Extract hidden data from the PNG file"`
-	Inject  cmd.Inject  `cmd:"" help:"Inject hidden data into the PNG file"`
+	Extract cmd.Extract `cmd:"" help:"Extract the hidden message from the PNG file"`
+	Inject  cmd.Inject  `cmd:"" help:"Inject a hidden message into the PNG file"`
 }
 
 func main() {
